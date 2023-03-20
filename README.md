@@ -13,8 +13,8 @@ Total Balance: 2.91129
 Total Locked Balance: 2.91129
 Total available balance: 0.0
 
-2.91 of which 2.91129 is locked: <address0>
-5.82 of which 0.0 is locked: <address0>
-8.73 of which 0.0 is locked: <address0>
-17.46 of which 0.0 is locked: <address0>
+2.91 of which 2.91129 is locked: <address0> <br>
+5.82 of which 0.0 is locked: <address0> <br>
+8.73 of which 0.0 is locked: <address0> <br>
+17.46 of which 0.0 is locked: <address0> <br>
 
