@@ -1,20 +1,34 @@
-# Outputs alephium miner wallet balances to console and html file.
-# use "python -m http.server" in terminal to start http server before running script. Make sure you start server from the same directory you have the script stored
+# Outputs alephium miner wallet balances and mining poolto console and html file.
+# If you have an api key for your node, this script will not work
+# #(WARNING: Most users should use an API key for the node unless you have a secure local environment)
 
+# Requirements:
+# redis (pip install redis or if you use pycharm use package manager)
+
+# use "python -m http.server" in the same folder as your script terminal to start http server before running script
+# eg cd d:\alephium\server python -m http.server
+
+import redis
 from urllib.request import urlopen
 import time
 import datetime
 import json
 
-while True: #refreshes balance every 2 minutes
+node_address = "http://192.168.0.28:12973" # alph mining node and port
+redis_address = "192.168.0.28" # redis address (no http!!)
+redis_port = 6379 # redis port
+refresh_rate = 120 # How many seconds between refreshing page
 
-    # define addresses and create urls for fetching balances
-    address0 = str("miningaddress 0 goes here")
-    address1 = str("miningaddress 1 goes here")
-    address2 = str("miningaddress 2 goes here")
-    address3 = str("miningaddress 3 goes here")
-    node_url = str("http://127.0.0.1:12973/addresses/") # address of your alph node, typically you would run on the same machine.
+while True:
+
+    # add your 4 mining addresses. below will create urls for fetching balances
+    address0 = str("")
+    address1 = str("")
+    address2 = str("")
+    address3 = str("")
+    node_url = str(node_address + str("/addresses/"))
     balance = str("/balance")
+
     group0 = (node_url + address0 + balance)
     group1 = (node_url + address1 + balance)
     group2 = (node_url + address2 + balance)
@@ -43,35 +57,53 @@ while True: #refreshes balance every 2 minutes
     total_balance = balance0 + balance1 + balance2 + balance3
     total_balance_locked = balance0_locked + balance1_locked + balance2_locked + balance3_locked
 
+# get hashrate, blocks found and payouts from redis:
+    r = redis.Redis(host= redis_address, port=redis_port, decode_responses=True)
+    pool_hashrate = r.get('pool-hashrate')
+    blocks_found = r.hgetall('foundBlocks')
+    no_blocks_found = len(blocks_found)
+    pretty_blocks_found = json.dumps(blocks_found, indent=4)
+
     # Print balances to console
     now = datetime.datetime.now()
-    print("--------------------------------------")
     print(now)
+    print("Pool hashrate: ", pool_hashrate , "Mhs")
+    print("Number of blocks found (all time): ",no_blocks_found)
+    print("--------------------------------------")
     print("Total Balance: ", total_balance / 1000000000000000000)
     print("Total Locked Balance: ", total_balance_locked / 1000000000000000000)
-    print("Available Balanse: ", (total_balance - total_balance_locked) / 1000000000000000000)
+    print("Available Balance: ", (total_balance - total_balance_locked) / 1000000000000000000)
     print("")
     print(address0, ": ", balance0 / 1000000000000000000, "of which ", balance0_locked / 1000000000000000000, " is locked")
     print(address1, ": ", balance1 / 1000000000000000000, "of which ", balance1_locked / 1000000000000000000, " is locked")
-    print(address1, ": ", balance2 / 1000000000000000000, "of which ", balance2_locked / 1000000000000000000, " is locked")
-    print(address1, ": ", balance3 / 1000000000000000000, "of which ", balance3_locked / 1000000000000000000, " is locked")
+    print(address2, ": ", balance2 / 1000000000000000000, "of which ", balance2_locked / 1000000000000000000, " is locked")
+    print(address3, ": ", balance3 / 1000000000000000000, "of which ", balance3_locked / 1000000000000000000, " is locked")
+    print("--------")#
     print("")
+    print("Hash and miner address of blocks found")
+    print(pretty_blocks_found)
 
     # create html file
     Func = open("balance.html", "w")
+    print()
+    print("--------------------------------------")
 
     # Adding balances to file
     Func.write(f"Time: {now}<P>"
-               f"Total Balance: {total_balance / 1000000000000000000} <br>"
-               f"Total Locked Balance: {total_balance_locked / 1000000000000000000} <br>"
-               f"Total available balance: {(total_balance - total_balance_locked) / 1000000000000000000}<br><hr>"
+               f"<b>Pool hashrate</b>: {pool_hashrate}  <br>"
+               f"<b>Number of blocks found:</b>  {no_blocks_found}<p>"
+               f"<b>Total Mining Wallet Balance:</b> {total_balance / 1000000000000000000} <br>"
+               f"<b>Total Locked Balance:</b> {total_balance_locked / 1000000000000000000} <br>"
+               f"<b>Total available balance:</b> {(total_balance - total_balance_locked) / 1000000000000000000}<br><hr>"
                f"<b>{balance0 / 1000000000000000000}</b> of which {balance0_locked / 1000000000000000000} is locked: {address0}  <br>"
                f"<b>{balance1 / 1000000000000000000}</b> of which {balance1_locked / 1000000000000000000} is locked: {address1}  <br>"
                f"<b>{balance2 / 1000000000000000000}</b> of which {balance2_locked / 1000000000000000000} is locked: {address2}  <br>"
-               f"<b>{balance3 / 1000000000000000000}</b> of which {balance3_locked / 1000000000000000000} is locked: {address3}  <br>"
+               f"<b>{balance3 / 1000000000000000000}</b> of which {balance3_locked / 1000000000000000000} is locked: {address3}  <p>"
+               f"-----Hash and miner address of blocks found------<br>"
+               f"{blocks_found}"
             )
 
     # Saving html file
     Func.close()
 
-    time.sleep(120) # sleep for 2 minutes before checking balances again.
+    time.sleep(refresh_rate) # sleep for 2 minutes before checking balances again.
